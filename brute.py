@@ -1,5 +1,7 @@
 from itertools import combinations
 import pandas as pd
+from mlxtend.frequent_patterns import apriori, association_rules
+from mlxtend.preprocessing import TransactionEncoder
 
 def get_valid_input(string, min, max):
     while True:
@@ -28,7 +30,10 @@ confidence = get_valid_input('Please Enter a Number Between 1 and 100 for Confid
 transactions = pd.read_csv(f'{num}/Transactions.csv')
 itemset = pd.read_csv(f'{num}/Items.csv')
 
-
+itemsList = []
+for index, row in transactions.iterrows():
+    itemSet = [item.strip() for item in row['Transaction'].split(',')]
+    itemsList.append(itemSet)
 
 def convertToSet(transactions):
     return set(item.strip() for item in transactions.split(","))
@@ -84,7 +89,7 @@ def generateRules(itemsets, transactions, min_support, min_confidence):
                 if confidence >= min_confidence / 100:
                     count += 1
                     print(
-                        f"\nRule {count}: {', '.join(start)} -> {', '.join(res)}, Confidence: {confidence}"
+                        f"\nRule {count}: {', '.join(start)} -> {', '.join(res)} \nConfidence: {round((confidence * 100),2)}% \nSupport: {round(((rule_support/len(transactions))*100),2)}%"
                     )
 
 
@@ -100,7 +105,7 @@ def generateFrequentItems(itemsets):
     return freqString
 
 
-def apriori(transactions, min_support, min_confidence):
+def aprioriBrute(transactions, min_support, min_confidence):
     itemsets = {}
     results = {}
 
@@ -110,7 +115,7 @@ def apriori(transactions, min_support, min_confidence):
 
     threshold = (min_support / 100) * len(transactions)
     itemsets = {k: v for k, v in itemsets.items() if v >= threshold}
-    
+
     k = 1
 
     while True:
@@ -123,6 +128,27 @@ def apriori(transactions, min_support, min_confidence):
 
     return results
 
-
-results = apriori(transactions, support, confidence)
+results = aprioriBrute(transactions, support, confidence)
 print(generateFrequentItems(results))
+
+print(itemsList)
+
+encoder = TransactionEncoder()
+onehot = encoder.fit(itemsList).transform(itemsList)
+df = pd.DataFrame(onehot, columns = encoder.columns_)
+
+aprioriItemsets = apriori(df, min_support=support/100, use_colnames=True)
+# Generate the association rules
+if not aprioriItemsets.empty:
+    aprioriRules = association_rules(aprioriItemsets, metric="confidence", min_threshold=confidence/100)
+    for index, row in aprioriRules.iterrows():
+        antecedent_str = row['antecedents']
+        consequent_str = row['consequents']
+        confidence_str = row['confidence']
+        
+        print(f"Rule {index + 1}: [{antecedent_str}, {consequent_str}, {confidence_str}]\n")
+else:
+    print("No frequent itemsets found.")
+
+
+
