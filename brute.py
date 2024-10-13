@@ -1,18 +1,40 @@
 from itertools import combinations
 import pandas as pd
 
+def get_valid_input(string, min, max):
+    while True:
+        try:
+            value = int(input(string))
+            if min <= value <= max:
+                return value
+            else:
+                print(f"Please enter a number between {min} and {max}.")
+        except ValueError:
+            print("Invalid Input. Please enter a valid integer.")
 
-transactions = pd.read_csv("Amazon Transactions.csv")
+def get_valid_choice():
+    while True:
+        choice = input('Please Choose a Number\n1. Amazon\n2. Shop Rite\n3. Apple\n4. Best Buy\n5. Nike\n')
+        if choice in ('1', '2', '3', '4', '5'):
+            return choice
+        else:
+            print("Invalid choice. Please enter a number 1 through 5.")
+
+print('Welcome to Apriori 2.0!')
+num = get_valid_choice()
+support = get_valid_input('Please Enter and Number Between 1 and 100 for Support: ', 1, 100)
+confidence = get_valid_input('Please Enter a Number Between 1 and 100 for Confidence: ', 1, 100)
+
+transactions = pd.read_csv(f'{num}/Transactions.csv')
+itemset = pd.read_csv(f'{num}/Items.csv')
+
 
 
 def convertToSet(transactions):
-    return set(transactions.split(", "))
+    return set(item.strip() for item in transactions.split(","))
 
 
 transactions["Transaction"] = transactions["Transaction"].apply(convertToSet)
-itemset = pd.read_csv("Amazon Items.csv")
-support = 45
-confidence = 70
 threshold = (support / 100) * len(transactions)
 
 # Get a dictionary of all the items from the csv file
@@ -36,6 +58,7 @@ def generateItemsets(prevItemsets, transactions, threshold, k):
 
 
 def generateRules(itemsets, transactions, min_support, min_confidence):
+    count = 0
     # Go through the final dictionary and if the length is only one item ignore it
     # If the length is more than two generate all the possible combinations
     for itemset in itemsets.keys():
@@ -59,8 +82,9 @@ def generateRules(itemsets, transactions, min_support, min_confidence):
                 )
                 confidence = rule_support / start_support
                 if confidence >= min_confidence / 100:
+                    count += 1
                     print(
-                        f"\nRule: {', '.join(start)} -> {', '.join(res)}, Confidence: {confidence}"
+                        f"\nRule {count}: {', '.join(start)} -> {', '.join(res)}, Confidence: {confidence}"
                     )
 
 
@@ -86,7 +110,7 @@ def apriori(transactions, min_support, min_confidence):
 
     threshold = (min_support / 100) * len(transactions)
     itemsets = {k: v for k, v in itemsets.items() if v >= threshold}
-    # results.update(itemsets)
+    
     k = 1
 
     while True:
@@ -100,5 +124,5 @@ def apriori(transactions, min_support, min_confidence):
     return results
 
 
-results = apriori(transactions, 45, 90)
+results = apriori(transactions, support, confidence)
 print(generateFrequentItems(results))
