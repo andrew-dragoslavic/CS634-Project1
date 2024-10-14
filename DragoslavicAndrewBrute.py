@@ -131,8 +131,6 @@ def aprioriBrute(transactions, min_support, min_confidence):
 results = aprioriBrute(transactions, support, confidence)
 print(generateFrequentItems(results))
 
-print(itemsList)
-
 encoder = TransactionEncoder()
 onehot = encoder.fit(itemsList).transform(itemsList)
 df = pd.DataFrame(onehot, columns = encoder.columns_)
